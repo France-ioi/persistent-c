@@ -46,11 +46,10 @@ function buildInitValue (core, type, init) {
 
 function buildArrayInitValue (core, type, init) {
   const elements = [];
-  const elemCount = type.count.toInteger();
   if (init === null) {
     /* Uninitialized array */
   } else if (Array.isArray(init)) {
-    for (let i = 0; i < elemCount; i += 1) {
+    for (let i = 0; i < type.count.toInteger(); i += 1) {
       elements.push(buildInitValue(core, type.elem, init && init[i]));
     }
   } else if (init instanceof PointerValue) {
@@ -58,7 +57,13 @@ function buildArrayInitValue (core, type, init) {
     const refType = pointerType(type.elem);
     const ref = new PointerValue(refType, init.address);
     /* init is a PointerValue with a definite-sized array type */
-    const count = Math.min(elemCount, init.type.size);
+    let count;
+    if (type.count) {
+      count = Math.min(type.count.toInteger(), init.type.size);
+    } else {
+      count = init.type.size;
+      type.size = init.type.size;
+    }
     for (let i = 0; i < count; i += 1) {
       elements.push(readValue(core, ref));
       ref.address += type.elem.size;
